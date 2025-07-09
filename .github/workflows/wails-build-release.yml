@@ -57,11 +57,20 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: arm64
-            runner: ubuntu-latest-arm64
+            runner: ubuntu-24.04-arm
 
-    runs-on: ${{ matrix.os == 'ubuntu-latest' && matrix.arch == 'arm64' && 'ubuntu-latest-arm64' || matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     
     steps:
+      - name: Debug environment
+        run: |
+          echo "OS: ${{ matrix.os }}"
+          echo "Arch: ${{ matrix.arch }}"
+          echo "Runner: ${{ runner.name }}"
+          uname -m
+          go version
+          wails version
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -96,6 +105,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            # 验证 ARM64 依赖可用性
+            sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev || echo "ARM64 dependencies installation failed, check package availability"
+          fi
 
       - name: Build Wails app
         shell: bash
@@ -103,7 +116,11 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             wails build -platform windows/${{ matrix.arch }} -o ${{ env.APP_NAME }}.exe
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            wails build -tags webkit2_41 -platform linux/${{ matrix.arch }} -o ${{ env.APP_NAME }}
+            if [ "${{ matrix.arch }}" = "arm64" ]; then
+              wails build -platform linux/${{ matrix.arch }} -o ${{ env.APP_NAME }} # ARM64 可能不需要 webkit2_41 标签
+            else
+              wails build -tags webkit2_41 -platform linux/${{ matrix.arch }} -o ${{ env.APP_NAME }}
+            fi
           else
             wails build -platform darwin/${{ matrix.arch }} -o ${{ env.APP_NAME }}
           fi
