@@ -114,11 +114,7 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             wails build -platform windows/${{ matrix.arch }} -o ${{ env.APP_NAME }}.exe
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            if [ "${{ matrix.arch }}" = "arm64" ]; then
-              wails build -platform linux/${{ matrix.arch }} -o ${{ env.APP_NAME }} # ARM64 可能不需要 webkit2_41 标签
-            else
-              wails build -tags webkit2_41 -platform linux/${{ matrix.arch }} -o ${{ env.APP_NAME }}
-            fi
+            wails build -tags webkit2_41 -platform linux/${{ matrix.arch }} -o ${{ env.APP_NAME }}
           else
             wails build -platform darwin/${{ matrix.arch }} -o ${{ env.APP_NAME }}
           fi
