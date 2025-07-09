@@ -1,0 +1,134 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  APP_NAME: FFmpegGUI
+
+jobs:
+  check-version-and-build:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.get_version.outputs.new_version }}
+      version_changed: ${{ steps.check_version.outputs.version_changed }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./frontend/package.json').version")
+          echo "new_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if version changed
+        id: check_version
+        shell: bash
+        run: |
+          git fetch origin tag v*
+          PREVIOUS_VERSION=$(git tag --sort=-v:refname | grep '^v' | head -n 1 | sed 's/^v//' || echo "0.0.0")
+          if [ "v$VERSION" != "$(git tag --sort=-v:refname | grep '^v' | head -n 1)" ]; then
+            echo "Version changed from $PREVIOUS_VERSION to $VERSION"
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version $VERSION has not changed"
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-and-release:
+    needs: check-version-and-build
+    if: needs.check-version-and-build.outputs.version_changed == 'true'
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        arch: [amd64, arm64]
+        go-version: ['1.24.3']
+        wails-version: ['latest']
+        exclude:
+          - os: windows-latest
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install Wails
+        shell: bash
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@${{ matrix.wails-version }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        shell: bash
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        shell: bash
+        run: cd frontend && pnpm install
+        
+      - name: Build frontend
+        shell: bash
+        run: cd frontend && pnpm build
+
+      - name: Build Wails app
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            wails build -platform windows/${{ matrix.arch }} -o ${{ env.APP_NAME }}.exe
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            sudo apt-get update
+            sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+            wails build -tags webkit2_41 -platform linux/${{ matrix.arch }} -o ${{ env.APP_NAME }}
+          else
+            wails build -platform darwin/${{ matrix.arch }} -o ${{ env.APP_NAME }}
+          fi
+
+      - name: Package artifacts
+        shell: bash
+        run: |
+          VERSION=${{ needs.check-version-and-build.outputs.new_version }}
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            pwsh -Command "Compress-Archive -Path build/bin/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.APP_NAME }}-windows-${{ matrix.arch }}-v${VERSION}.zip"
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            tar -czvf ${{ env.APP_NAME }}-linux-${{ matrix.arch }}-v${VERSION}.tar.gz -C build/bin ${{ env.APP_NAME }}
+          else
+            zip -r ${{ env.APP_NAME }}-darwin-${{ matrix.arch }}-v${VERSION}.zip build/bin/${{ env.APP_NAME }}.app
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ matrix.os }}-${{ matrix.arch }}-v${{ needs.check-version-and-build.outputs.new_version }}
+          path: |
+            ${{ env.APP_NAME }}-*-${{ matrix.arch }}-v${{ needs.check-version-and-build.outputs.new_version }}.*
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version-and-build.outputs.new_version }}
+          name: Release v${{ needs.check-version-and-build.outputs.new_version }}
+          body: |
+            Automated release for version ${{ needs.check-version-and-build.outputs.new_version }}
+          draft: false
+          prerelease: false
+          files: |
+            ${{ env.APP_NAME }}-*-${{ matrix.arch }}-v${{ needs.check-version-and-build.outputs.new_version }}.*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
