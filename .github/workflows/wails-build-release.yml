@@ -93,16 +93,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib libc6-dev-i386
+          which aarch64-linux-gnu-gcc
+          export CC=aarch64-linux-gnu-gcc
+          export CXX=aarch64-linux-gnu-g++
+          export GOARCH=arm64
+          export CGO_ENABLED=1
 
       - name: Build Wails app
         shell: bash
         run: |
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
-            export CC=aarch64-linux-gnu-gcc
-            export CXX=aarch64-linux-gnu-g++
-            export GOARCH=arm64
-            export CGO_ENABLED=1
-          fi
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             wails build -platform windows/${{ matrix.arch }} -o ${{ env.APP_NAME }}.exe
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
