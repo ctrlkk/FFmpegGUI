@@ -68,8 +68,6 @@ jobs:
           echo "Arch: ${{ matrix.arch }}"
           echo "Runner: ${{ runner.name }}"
           uname -m
-          go version
-          wails version
 
       - name: Checkout code
         uses: actions/checkout@v4
