@@ -87,9 +87,21 @@ jobs:
         shell: bash
         run: cd frontend && pnpm build
 
+      - name: Install ARM64 cross-compiler
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
       - name: Build Wails app
         shell: bash
         run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            export CC=aarch64-linux-gnu-gcc
+            export CXX=aarch64-linux-gnu-g++
+            export GOARCH=arm64
+            export CGO_ENABLED=1
+          fi
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             wails build -platform windows/${{ matrix.arch }} -o ${{ env.APP_NAME }}.exe
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
