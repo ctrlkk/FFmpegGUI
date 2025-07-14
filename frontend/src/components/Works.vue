@@ -5,7 +5,7 @@ import { throttle } from 'lodash'
 import { quote } from 'shell-quote'
 import { createHighlighter } from 'shiki'
 import { ShikiMagicMove } from 'shiki-magic-move/vue'
-import { ExecuteCommand, StopCommand } from '../../wailsjs/go/main/App'
+import { ExecuteCommand, StopCommand } from '../../wailsjs/go/app/App'
 
 import { ffmpegPreset, replaceFFmpegTemplate } from '../data/ffmpeg-preset'
 import 'shiki-magic-move/dist/style.css'
@@ -20,10 +20,6 @@ const isExecuting = ref(false)
 
 const { y: scrollY } = useScroll(window)
 const isScrolled = computed(() => throttle(() => scrollY.value > 80, 200)())
-
-const presetOptions = computed(() => {
-  return presets.value.map(preset => ({ label: preset.name, value: preset.id }))
-})
 
 const currentPreset = computed(() => {
   return presets.value.find(p => p.id === selectedPresetId.value)
@@ -93,32 +89,10 @@ async function copyCommand() {
 }
 
 function resetParameters() {}
-
-function onDragEnter(e: DragEvent) {
-  e.preventDefault()
-}
-
-function onDragLeave(e: DragEvent) {
-  e.preventDefault()
-}
-
-function onDragOver(e: DragEvent) {
-  e.preventDefault()
-}
-
-function onDrop(e: DragEvent) {
-  e.preventDefault()
-  if (e.dataTransfer) {
-    const files = e.dataTransfer.files
-    for (let i = 0; i < files.length; i++) {
-      message.info(files[i].name)
-    }
-  }
-}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900" @drop="onDrop" @dragenter="onDragEnter" @dragover="onDragOver" @dragleave="onDragLeave">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="bg-white px-4 pt-2 dark:bg-gray-800">
       <div class="flex items-center justify-between">
         <i-logos-ffmpeg class="text-2xl" />
@@ -193,17 +167,7 @@ function onDrop(e: DragEvent) {
         <NGrid :cols="12" :x-gap="16" :y-gap="16" responsive="screen">
           <!-- 预设选择区域 -->
           <NGridItem :span="12" :md-span="4">
-            <NCard size="small" title="预设模板" class="h-fit">
-              <NSelect
-                v-model:value="selectedPresetId"
-                :options="presetOptions"
-                size="medium"
-                placeholder="选择预设模板"
-              />
-              <template #header-extra>
-                <i-carbon-template />
-              </template>
-            </NCard>
+            <PresetSelector v-model="selectedPresetId" :presets="presets" />
           </NGridItem>
 
           <!-- 参数配置区域 -->

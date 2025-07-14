@@ -38,7 +38,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <NCard size="small" class="min-h-96">
+  <NCard size="small">
     <template #header>
       <div class="w-full flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -97,7 +97,7 @@ onMounted(() => {
             暂无日志输出
           </div>
           <div class="text-sm opacity-70">
-            点击 "模拟执行" 按钮查看示例日志输出
+            点击 "执行" 按钮开始处理
           </div>
         </div>
       </div>

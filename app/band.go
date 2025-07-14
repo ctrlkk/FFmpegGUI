@@ -1,7 +1,6 @@
-package main
+package app
 
 import (
-	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -10,21 +9,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
-
-// App struct
-type App struct {
-	ctx context.Context
-	// 正在执行的cmd实例
-	cmd *exec.Cmd
-}
-
-func NewApp() *App {
-	return &App{}
-}
-
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-}
 
 // 选择目录对话框
 func (a *App) OpenDirectoryDialog(title string) (string, error) {

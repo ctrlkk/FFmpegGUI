@@ -30,6 +30,7 @@ export interface FFmpegParameter {
 export interface FFmpegPreset {
   id: string
   name: string
+  category: ('video' | 'audio' | 'image' | 'format-conversion')[]
   template: string[]
   parameters: {
     [key: string]: FFmpegParameter
@@ -58,6 +59,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'crop',
     name: '视频裁切',
+    category: ['video'],
     template: [
       'ffmpeg',
       '-i',
@@ -90,6 +92,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'extract',
     name: '提取音频',
+    category: ['audio', 'video'],
     template: [
       'ffmpeg',
       '-i',
@@ -147,6 +150,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'compress',
     name: '视频压缩',
+    category: ['video'],
     template: [
       'ffmpeg',
       '-i',
@@ -229,6 +233,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'cut',
     name: '视频剪切',
+    category: ['video', 'audio'],
     template: [
       'ffmpeg',
       '-i',
@@ -260,6 +265,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'watermark',
     name: '添加水印',
+    category: ['video', 'image'],
     template: [
       'ffmpeg',
       '-i',
@@ -294,6 +300,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'convert-video',
     name: '视频格式转换',
+    category: ['format-conversion', 'video'],
     template: [
       'ffmpeg',
       '-i',
@@ -347,6 +354,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'convert-audio',
     name: '音频格式转换',
+    category: ['format-conversion', 'audio'],
     template: [
       'ffmpeg',
       '-i',
@@ -402,6 +410,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'convert-image',
     name: '图片格式转换',
+    category: ['format-conversion', 'image'],
     template: [
       'ffmpeg',
       '-i',
@@ -426,6 +435,7 @@ export const ffmpegPreset: FFmpegPreset[] = [
   {
     id: 'video-to-gif',
     name: '视频转GIF',
+    category: ['image', 'video'],
     template: [
       'ffmpeg',
       '-i',
@@ -487,6 +497,123 @@ export const ffmpegPreset: FFmpegPreset[] = [
       {
         output_dir: { type: 'directory', label: '输出目录', default: '', description: '选择输出文件的保存路径' },
         output: { type: 'string', label: '输出文件名', default: 'output.gif', description: '转换后GIF的文件名' },
+      },
+    ],
+  },
+  {
+    id: 'advanced-video-convert',
+    name: '高级视频编码转换',
+    category: ['format-conversion', 'video'],
+    template: [
+      'ffmpeg',
+      '-i',
+      '{input}',
+      '-ss',
+      '{start}',
+      '-t',
+      '{duration}',
+      '-c:v',
+      '{video_codec}',
+      '-b:v',
+      '{video_bitrate}',
+      '-c:a',
+      '{audio_codec}',
+      '-b:a',
+      '{audio_bitrate}',
+      '{hwaccel}',
+      '{output_dir}/{output}',
+    ],
+    parameters: [
+      {},
+      {},
+      { input: { type: 'file', label: '输入视频', default: 'input.mp4', accept: 'video/*', description: '选择需要转换格式的视频文件' } },
+      {},
+      { start: { type: 'time', label: '开始时间', default: '00:00:00', placeholder: 'HH:MM:SS', description: '视频转换的起始时间点' } },
+      {},
+      { duration: { type: 'time', label: '持续时长', default: '00:00:00', placeholder: 'HH:MM:SS', description: '转换的持续时间，设为00:00:00处理整个视频' } },
+      {},
+      {
+        video_codec: {
+          type: 'select',
+          label: '视频编码',
+          default: 'libx264',
+          options: [
+            { label: 'H.264 - 广泛兼容', value: 'libx264' },
+            { label: 'H.265/HEVC - 高压缩率', value: 'libx265' },
+            { label: 'VP9 - 开源格式', value: 'libvpx-vp9' },
+            { label: 'AV1 - 新一代编码', value: 'libaom-av1' },
+            { label: 'H.264 (NVIDIA NVENC)', value: 'h264_nvenc' },
+            { label: 'H.265/HEVC (NVIDIA NVENC)', value: 'hevc_nvenc' },
+            { label: 'H.264 (AMD AMF)', value: 'h264_amf' },
+            { label: 'H.265/HEVC (AMD AMF)', value: 'hevc_amf' },
+          ],
+          description: '选择输出的视频编码格式，支持GPU加速选项',
+        },
+      },
+      {},
+      {
+        video_bitrate: {
+          type: 'select',
+          label: '视频比特率',
+          default: '2M',
+          options: [
+            { label: '1M - 低质量', value: '1M' },
+            { label: '2M - 标准质量', value: '2M' },
+            { label: '5M - 高质量', value: '5M' },
+            { label: '8M - 极高质量', value: '8M' },
+            { label: '15M - 超高质量', value: '15M' },
+          ],
+          description: '选择视频比特率，影响画质和文件大小',
+        },
+      },
+      {},
+      {
+        audio_codec: {
+          type: 'select',
+          label: '音频编码',
+          default: 'aac',
+          options: [
+            { label: 'AAC - 高效编码', value: 'aac' },
+            { label: 'MP3 - 通用格式', value: 'mp3' },
+            { label: 'AC3 - 家庭影院', value: 'ac3' },
+            { label: 'FLAC - 无损格式', value: 'flac' },
+          ],
+          description: '选择输出的音频编码格式',
+        },
+      },
+      {},
+      {
+        audio_bitrate: {
+          type: 'select',
+          label: '音频比特率',
+          default: '128k',
+          options: [
+            { label: '64k - 低质量', value: '64k' },
+            { label: '96k - 标准', value: '96k' },
+            { label: '128k - 高质量', value: '128k' },
+            { label: '192k - 极高', value: '192k' },
+            { label: '256k - 最高', value: '256k' },
+          ],
+          description: '选择音频的比特率，影响音质',
+        },
+      },
+      {
+        hwaccel: {
+          type: 'select',
+          label: '硬件加速',
+          default: '',
+          options: [
+            { label: '无硬件加速', value: '' },
+            { label: 'NVIDIA CUDA', value: '-hwaccel cuda -hwaccel_output_format cuda' },
+            { label: 'AMD AMF', value: '-hwaccel d3d11va' },
+            { label: 'Intel QSV', value: '-hwaccel qsv' },
+          ],
+          description: '选择硬件加速选项以提高编码效率（需硬件支持）',
+        },
+      },
+      {
+        output_dir: { type: 'directory', label: '输出目录', default: '', description: '选择输出文件的保存路径' },
+        output: { type: 'string', label: '输出文件名', default: 'converted_advanced.mp4', description: '转换后视频的文件名' },
       },
     ],
   },

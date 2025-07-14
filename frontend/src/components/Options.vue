@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { FFmpegPreset } from '../data/ffmpeg-preset'
-import { OpenDirectoryDialog, OpenFileDialog } from '../../wailsjs/go/main/App'
+import { OpenDirectoryDialog, OpenFileDialog } from '../../wailsjs/go/app/App'
 
 const parameters = defineModel<FFmpegPreset['parameters']>('parameters')
 const parameterValues = defineModel<Array<Record<string, any>>>('parameterValues', {
@@ -20,19 +20,10 @@ function selectDir(index: number, key: string) {
     parameterValues.value[index][key].default = dir
   }).catch(() => {})
 }
-
-// 分辨率更新方法
-// function updateResolution(key: string) {
-//   const width = parameterValues[index].value[`${key}_width`]
-//   const height = parameterValues[index].value[`${key}_height`]
-//   if (width && height) {
-//     parameterValues[index].value[key] = `${width}x${height}`
-//   }
-// }
 </script>
 
 <template>
-  <NCard size="small" title="参数配置" class="h-fit">
+  <NCard size="small" title="参数配置">
     <template #header-extra>
       <i-carbon-settings />
     </template>
